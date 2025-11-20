@@ -1,0 +1,6 @@
+/utils/__pycache__/*
+*.json
+data
+checkpoint
+/logs
+*__pycache__
