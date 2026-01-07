@@ -45,7 +45,7 @@ class QDenseLayer(nn.module):
             self.activation = QuantReLU(bit_width=a_bit_width, inplace=False)
         else:
             # still uses a quantizer but with identity nonlinearity
-            self.activation = QuantIdentity(bit_width=a_bit_width)
+            self.activation = QuantIdentity(return_quant_tensor=True)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # Brevitas expects float tensors during QAT; it will insert fake quant.

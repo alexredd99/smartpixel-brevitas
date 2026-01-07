@@ -68,7 +68,6 @@ class DenseModelLarge(nn.Module):
     def forward(self, x: Tensor) -> Tensor:
         return self.net(x)
 
-# TODO: add more quantized model for mini-float supported model 
 # Quantized model using Brevitas
 class QuantDenseModel(nn.Module, metaclass=ABCMeta):
     """

@@ -23,7 +23,7 @@ class QResAddLayer(nn.Module):
         super().__init__()
         
         # Quantize the output activation after addition
-        self.quant = QuantIdentity(bit_width=a_bit_width)
+        self.quant = QuantIdentity(return_quant_tensor=True)
 
     def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         # x and y should have the same shape: (B, T, d_model)
