@@ -36,7 +36,6 @@ class QDenseLayer(nn.module):
             out_features=out_features,
             bias=bias,
             weight_bit_width=w_bit_width,
-            # per-output-channel is usually better for conv/linear
             weight_per_channel=True,
         )
 
@@ -44,7 +43,7 @@ class QDenseLayer(nn.module):
         if act:
             self.activation = QuantReLU(bit_width=a_bit_width, inplace=False)
         else:
-            # still uses a quantizer but with identity nonlinearity
+            # still uses a quantizer but without identity nonlinearity
             self.activation = QuantIdentity(return_quant_tensor=True)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

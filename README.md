@@ -13,3 +13,7 @@ Particle Transformer (ParT) is a transformer model used for jet tagging. ParT's 
 Smart Pixel dataset can be downloaded from [here](https://cseweb.ucsd.edu/~oweng/smart_pixel_dataset/).
 
 JetClass dataset can be downloaded from [here](https://zenodo.org/records/6619768).
+
+# Environment
+
+References include `./requirement.txt` and `./environment.yaml` (in progress).

@@ -7,7 +7,7 @@
 """
 import torch
 import torch.nn as nn
-from particle_transformer.layers import *
+from ..layers import *
 
 
 class QuantParticleAttentionBlock(nn.Module):

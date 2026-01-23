@@ -12,7 +12,9 @@
 """
 
 import torch
-from layers import QDenseLayer, QMHALayer, QResAddLayer
+from .blocks import QuantParticleAttentionBlock, QuantClassAttentionBlock
+from .layers import QDenseLayer
+import torch.nn as nn
 
 
 class ParTModel(torch.nn.Module):
@@ -22,7 +24,7 @@ class ParTModel(torch.nn.Module):
         in_features: int = 8,    
         d_model: int = 128,      
         num_heads: int = 8,
-        out_dim: int = 8,
+        num_classes: int = 10,
         w_bit_width: int = 8,
         a_bit_width: int = 8,
         pab_num = 8,       # number of Particle Attention Blocks
@@ -30,7 +32,31 @@ class ParTModel(torch.nn.Module):
     ):
         super().__init__()
 
-        # TODO: Add MLP head for classification/regression
+        self.pab_num = pab_num
+        self.cab_num = cab_num
+
+        self.pab_blocks = torch.nn.ModuleList([
+            QuantParticleAttentionBlock(
+                dim=d_model,
+                num_heads=num_heads,
+                mlp_ratio=4.0,
+            )
+            for _ in range(pab_num)
+        ])
+
+        self.cab_blocks = torch.nn.ModuleList([
+            QuantClassAttentionBlock(
+                dim=d_model,
+                num_heads=num_heads,
+                mlp_ratio=4.0,
+            )
+            for _ in range(cab_num)
+        ])
+
+        # single-layer MLP, followed by softmax
+        self.mlp = QDenseLayer(in_features=d_model, out_features=num_classes, act=False, w_bit_width=w_bit_width, a_bit_width=a_bit_width)
+        self.softmax = nn.Softmax(dim=-1)
+
 
     def forward(self, x: torch.Tensor, U: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor:
         """
@@ -50,8 +76,7 @@ class ParTModel(torch.nn.Module):
             x_l = x_pab_out     # particle tokens
             x_class = self.cab_blocks[_](x_class, x_l, mask)
 
-        
-
-        # TODO: apply MLP and final activation (softmax) 
+        out = self.mlp(x_class)  # [B, 1, num_classes]
+        out = self.softmax(out)   # [B, 1, num_classes]
         
         return out
