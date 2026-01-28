@@ -12,6 +12,8 @@ Example output can be found in temp.txt (Created with: 'time python -u golden.py
 
 ## Dataset
 
+Dataset can be downloaded from [here](https://zenodo.org/records/6619768).
+
 ```
 wget https://zenodo.org/record/6619768/files/JetClass_Pythia_train_100M_part0.tar?download=1 \
   -O JetClass_Pythia_train_100M_part0.tar

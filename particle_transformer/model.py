@@ -21,7 +21,8 @@ class ParTModel(torch.nn.Module):
 
     def __init__(
         self,
-        in_features: int = 8,    
+        in_features: int = 8,
+        interact_features: int = 4,    
         d_model: int = 128,      
         num_heads: int = 8,
         num_classes: int = 10,
@@ -35,10 +36,14 @@ class ParTModel(torch.nn.Module):
         self.pab_num = pab_num
         self.cab_num = cab_num
 
+        self.input_proj = QDenseLayer(in_features, d_model)
+        self.interact_proj = QDenseLayer(interact_features, d_model)
+
         self.pab_blocks = torch.nn.ModuleList([
             QuantParticleAttentionBlock(
                 dim=d_model,
                 num_heads=num_heads,
+                num_classes=num_classes,
                 mlp_ratio=4.0,
             )
             for _ in range(pab_num)
@@ -48,6 +53,7 @@ class ParTModel(torch.nn.Module):
             QuantClassAttentionBlock(
                 dim=d_model,
                 num_heads=num_heads,
+                num_classes=num_classes,
                 mlp_ratio=4.0,
             )
             for _ in range(cab_num)
@@ -61,9 +67,12 @@ class ParTModel(torch.nn.Module):
     def forward(self, x: torch.Tensor, U: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor:
         """
         x: (B, T, in_features)
+        U: (B, T, T) interaction embeddings for P-MHA
         mask (optional): (B, T) with 1=keep, 0=pad
         """
         # Particle Attention Blocks
+        x = self.input_proj(x)  # initial projection
+        U = self.interact_proj(U)  # project interaction embeddings
         for _ in range(self.pab_num):
             x = self.pab_blocks[_](x, U, mask)
 
@@ -73,10 +82,9 @@ class ParTModel(torch.nn.Module):
         
         # Class Attention Blocks
         for _ in range(self.cab_num):
-            x_l = x_pab_out     # particle tokens
-            x_class = self.cab_blocks[_](x_class, x_l, mask)
+            x_class = self.cab_blocks[_](x_class, x_pab_out, mask)
 
         out = self.mlp(x_class)  # [B, 1, num_classes]
-        out = self.softmax(out)   # [B, 1, num_classes]
+        # out = self.softmax(out)   # [B, 1, num_classes]
         
         return out

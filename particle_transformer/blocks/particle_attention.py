@@ -14,7 +14,9 @@ class QuantParticleAttentionBlock(nn.Module):
     def __init__(self,
                  dim: int,
                  num_heads: int,
-                 mlp_ratio: float = 4.0 # expansion ratio for MLP hidden dim
+                 num_classes: int,
+                 mlp_ratio: float = 4.0, # expansion ratio for MLP hidden dim
+                 dropout: float = 0.1,
                  ):
         super().__init__()
         hidden_dim = int(dim * mlp_ratio)
@@ -41,7 +43,11 @@ class QuantParticleAttentionBlock(nn.Module):
         self.ln4 = nn.LayerNorm(hidden_dim, eps=1e-6)
 
         # 6) Residual-add after MLP (quantized)
-        self.res_add2 = QDenseLayer()
+        self.res_add2 = QDenseLayer(hidden_dim, num_classes)
+
+        # dropout layer
+        self.attn_drop = nn.Dropout(dropout)
+        self.mlp_drop  = nn.Dropout(dropout)
 
     def forward(self, x, U, attn_mask=None):
         """
@@ -59,6 +65,8 @@ class QuantParticleAttentionBlock(nn.Module):
         attn_out = self.pmha(x_norm, U, attn_mask)   # [B, N, D]
         attn_out_norm = self.ln2(attn_out)
 
+        attn_out_norm = self.attn_drop(attn_out_norm)
+
         # Quantized residual add: x + attn_out
         y = self.res_add1(x, attn_out_norm)
 
@@ -70,6 +78,7 @@ class QuantParticleAttentionBlock(nn.Module):
         h = self.activation(h)         # GELU usually kept in float
         h_norm = self.ln4(h)         # LN4 in float
         h = self.fc2(h_norm)
+        h_norm = self.mlp_drop(h_norm)
 
         # Second residual: y + h
         out = self.res_add2(y, h)

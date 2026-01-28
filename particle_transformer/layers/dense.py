@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from brevitas.nn import QuantLinear, QuantReLU, QuantIdentity
 
-class QDenseLayer(nn.module):
+class QDenseLayer(nn.Module):
 
     """
     Quantized dense layer using Brevitas.

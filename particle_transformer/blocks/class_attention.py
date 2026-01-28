@@ -14,7 +14,8 @@ class QuantClassAttentionBlock(nn.Module):
     def __init__(self,
                  dim: int,
                  num_heads: int,
-                 mlp_ratio: float = 4.0 # expansion ratio for MLP hidden dim
+                 num_classes: int,
+                 mlp_ratio: float = 4.0, # expansion ratio for MLP hidden dim,
                  ):
         super().__init__()
         hidden_dim = int(dim * mlp_ratio)
@@ -41,7 +42,7 @@ class QuantClassAttentionBlock(nn.Module):
         self.ln4 = nn.LayerNorm(hidden_dim, eps=1e-6)
 
         # 6) Residual-add after MLP (quantized)
-        self.res_add2 = QDenseLayer()
+        self.res_add2 = QDenseLayer(hidden_dim, num_classes)
 
     def forward(self, x_class, x_l, attn_mask=None):
         """
