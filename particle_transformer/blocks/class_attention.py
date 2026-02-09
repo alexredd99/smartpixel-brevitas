@@ -42,7 +42,7 @@ class QuantClassAttentionBlock(nn.Module):
         self.ln4 = nn.LayerNorm(hidden_dim, eps=1e-6)
 
         # 6) Residual-add after MLP (quantized)
-        self.res_add2 = QDenseLayer(hidden_dim, num_classes)
+        self.res_add2 = QResAddLayer()
 
     def forward(self, x_class, x_l, attn_mask=None):
         """
@@ -75,6 +75,6 @@ class QuantClassAttentionBlock(nn.Module):
         h = self.fc2(h_norm)
 
         # ----- second residual -----
-        out = self.res2(y, h)
+        out = self.res_add2(y, h)
         return out
 

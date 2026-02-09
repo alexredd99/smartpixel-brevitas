@@ -37,7 +37,7 @@ class ParTModel(torch.nn.Module):
         self.cab_num = cab_num
 
         self.input_proj = QDenseLayer(in_features, d_model)
-        self.interact_proj = QDenseLayer(interact_features, d_model)
+        self.interact_proj = QDenseLayer(interact_features, num_heads)
 
         self.pab_blocks = torch.nn.ModuleList([
             QuantParticleAttentionBlock(
@@ -73,10 +73,13 @@ class ParTModel(torch.nn.Module):
         # Particle Attention Blocks
         x = self.input_proj(x)  # initial projection
         U = self.interact_proj(U)  # project interaction embeddings
+        U = U.permute(0, 3, 1, 2)
         for _ in range(self.pab_num):
             x = self.pab_blocks[_](x, U, mask)
 
         # Initial input for Class Attention Blocks
+        if hasattr(x, "value"):
+            x = x.value
         x_pab_out = x # save PAB output for CAB input
         x_class = x[:, :1, :]  # class token
         

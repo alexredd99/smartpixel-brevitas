@@ -43,7 +43,7 @@ class QuantParticleAttentionBlock(nn.Module):
         self.ln4 = nn.LayerNorm(hidden_dim, eps=1e-6)
 
         # 6) Residual-add after MLP (quantized)
-        self.res_add2 = QDenseLayer(hidden_dim, num_classes)
+        self.res_add2 = QResAddLayer()
 
         # dropout layer
         self.attn_drop = nn.Dropout(dropout)
@@ -63,6 +63,10 @@ class QuantParticleAttentionBlock(nn.Module):
 
         # Quantized P-MHA
         attn_out = self.pmha(x_norm, U, attn_mask)   # [B, N, D]
+        if isinstance(attn_out, tuple):
+            print("DEBUG pmha tuple lens/shapes:",
+                len(attn_out),
+                [getattr(t, "shape", None) for t in attn_out])
         attn_out_norm = self.ln2(attn_out)
 
         attn_out_norm = self.attn_drop(attn_out_norm)
@@ -76,9 +80,9 @@ class QuantParticleAttentionBlock(nn.Module):
         # Quantized Dense -> GELU -> Quantized Dense
         h = self.fc1(y_norm)
         h = self.activation(h)         # GELU usually kept in float
-        h_norm = self.ln4(h)         # LN4 in float
-        h = self.fc2(h_norm)
-        h_norm = self.mlp_drop(h_norm)
+        h = self.ln4(h)         # LN4 in float
+        h = self.mlp_drop(h)
+        h = self.fc2(h)
 
         # Second residual: y + h
         out = self.res_add2(y, h)

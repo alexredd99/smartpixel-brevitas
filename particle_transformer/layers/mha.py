@@ -126,6 +126,8 @@ class QMHALayer(nn.Module):
                 attn_mask, batch_size=B, num_heads=self.num_heads,
                 query_seq_length=N, key_value_seq_length=N_kv
             )  # [B,H,N,N_kv]
+            if mask.dim() == 3 and mask.shape[0] == B * self.num_heads:
+                mask = mask.view(B, self.num_heads, N, N_kv)
             scores = scores + mask
 
         attn = F.softmax(scores, dim=-1)
@@ -245,6 +247,9 @@ class QPMHALayer(nn.Module):
                 attn_mask, batch_size=B, num_heads=self.num_heads,
                 query_seq_length=N, key_value_seq_length=N_kv
             )
+            # Convert to [B, H, N, N_kv] to match scores
+            if mask.dim() == 3 and mask.shape[0] == B * self.num_heads:
+                mask = mask.view(B, self.num_heads, N, N_kv)
             scores = scores + mask
 
         attn = F.softmax(scores, dim=-1)
