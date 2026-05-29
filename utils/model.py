@@ -97,12 +97,12 @@ class QuantDenseModel(nn.Module, metaclass=ABCMeta):
         return x
 
     @abstractmethod
-    def quant_weight(self) -> tuple[Tensor, Tensor]:
+    def quant_weight(self, layer_name: str = "fc1") -> tuple[Tensor, Tensor]:
         """Get quantized model weights."""
         pass
 
     @abstractmethod
-    def quant_input(self, x: Tensor) -> tuple[Tensor, Tensor]:
+    def quant_input(self, x: Tensor, layer_name: str = "fc1") -> tuple[Tensor, Tensor]:
         """Quantize input tensor."""
         pass
 
@@ -176,14 +176,24 @@ class IntQuantDenseModel(QuantDenseModel):
             input_bit_width=activation_total_bits,
         )
 
-    def quant_weight(self) -> tuple[Tensor, Tensor]:
+    def _get_quant_layer(self, layer_name: str):
+        layer = getattr(self, layer_name)
+
+        if not isinstance(layer, qnn.QuantLinear):
+            raise ValueError(f"{layer_name} is not a QuantLinear layer")
+
+        return layer
+
+    def quant_weight(self, layer_name: str = "fc1") -> tuple[Tensor, Tensor]:
+        layer = self._get_quant_layer(layer_name)
         with torch.no_grad():
-            w: IntQuantTensor = self.fc1.quant_weight()
+            w: IntQuantTensor = layer.quant_weight()
         return w.int(), w.scale
 
-    def quant_input(self, x: Tensor) -> tuple[Tensor, Tensor]:
+    def quant_input(self, x: Tensor, layer_name: str = "fc1") -> tuple[Tensor, Tensor]:
+        layer = self._get_quant_layer(layer_name)
         with torch.no_grad():
-            inp: IntQuantTensor = self.fc1.input_quant(x)
+            inp: IntQuantTensor = layer.input_quant(x)
         return inp.int(), inp.scale
     
 class IntQuantDenseModelLarge(QuantDenseModelLarge):
